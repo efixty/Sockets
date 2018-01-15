@@ -7,21 +7,17 @@ import java.util.*;
 
 public class Server {
 
-	public static ArrayList<Socket> clients;
 	private static ServerSocket server;
 	private static Socket client;
-	private static int counter = 0;
 
     public static void main(String[] args) throws Exception {
 		
-    	clients = new ArrayList<>();
-    	server = new ServerSocket(8080, 1);
+    	server = new ServerSocket(8080);
     	try{
 	    	while(true){
     			client = server.accept();
     			System.out.println(client);
-    			clients.add(client);
-	    		// new Thread(new MyRunnable(), "" + counter).start();
+	    		new Thread(new MyRunnable(client)).start();
 			}			
     	} catch (Exception e) {
     		System.out.println("Something went wrong on server");
@@ -32,11 +28,15 @@ public class Server {
 
 class MyRunnable implements Runnable {
 
-	private static BufferedReader reader;
-	private static String input;
-	private static PrintWriter pw;
-	private static int a, b;
-	private static Socket client = Server.clients.get(Server.clients.size() - 1);
+	private BufferedReader reader;
+	private String input;
+	private PrintWriter pw;
+	private int a, b;
+	private Socket client;
+
+	MyRunnable(Socket client) {
+		this.client = client;
+	}
 
 	@Override
 	public void run() {
