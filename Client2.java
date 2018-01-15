@@ -21,9 +21,10 @@ public class Client2 {
 				in = connection.getInputStream();
 				pw = new PrintWriter(out, true);
 				sc = new Scanner(System.in);
+				reader = new BufferedReader(new InputStreamReader(in));
+				System.out.println(reader.readLine());
 				String input = sc.nextLine();
 				pw.println(input);
-				reader = new BufferedReader(new InputStreamReader(in));
 				String answer = reader.readLine();
 				System.out.println(answer);
 			}
