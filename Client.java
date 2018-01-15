@@ -22,7 +22,9 @@ public class Client {
 				pw = new PrintWriter(out, true);
 				sc = new Scanner(System.in);
 				reader = new BufferedReader(new InputStreamReader(in));
+				new BufferedReader(new InputStreamReader(System.in)).readLine();
 				String input = sc.nextLine();
+				// String input = "4 5";
 				pw.println(input);
 				String answer = reader.readLine();
 				System.out.println(answer);
