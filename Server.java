@@ -43,7 +43,6 @@ class MyRunnable implements Runnable {
 		try {
 			reader = new BufferedReader(new InputStreamReader(client.getInputStream()));
 		  	pw = new PrintWriter(client.getOutputStream(), true);
-		    pw.println("Enter 2 numbers separated with spacebar");
 		    if((input = reader.readLine()) != null) {
 		    	a = Integer.parseInt(input.split(" ")[0]);
 		    	b = Integer.parseInt(input.split(" ")[1]);

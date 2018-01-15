@@ -4,7 +4,7 @@ import java.lang.*;
 import java.util.*;
 import java.io.*;
 
-public class Client2 {
+public class Client {
 
 	private static Socket connection;
 	private static PrintWriter pw;
@@ -22,21 +22,20 @@ public class Client2 {
 				pw = new PrintWriter(out, true);
 				sc = new Scanner(System.in);
 				reader = new BufferedReader(new InputStreamReader(in));
-				System.out.println(reader.readLine());
 				String input = sc.nextLine();
 				pw.println(input);
 				String answer = reader.readLine();
 				System.out.println(answer);
 			}
 		} catch(Exception e) {
-			System.out.println("Something went wrong: client2");
+			System.out.println("Something went wrong: client1");
 		} finally {
 			pw.flush();
 			pw.close();
 			try {
 				reader.close();
 			} catch(Exception e) {
-				System.out.println("Couldn't close Client2's reader");
+				System.out.println("Couldn't close Client1's reader ");
 			}
 		}
 	}
