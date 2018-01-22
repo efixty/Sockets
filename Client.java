@@ -12,6 +12,8 @@ public class Client {
 	private static InputStream in;
 	private static BufferedReader reader;
 	private static Scanner sc;
+	private static String nickname;
+	private static int id;
 
 	public static void main(String[] args) {
 		try {
@@ -23,6 +25,22 @@ public class Client {
 		} catch(Exception e) {
 			System.out.println("Something went wrong: client");
 		}
+	}
+
+	public static void setNickname(String nickname) {
+		Client.nickname = nickname;
+	}
+
+	public static String getNickname() {
+		return Client.nickname;
+	}
+
+	public static void setId(int id) {
+		Client.id = id;
+	}
+
+	public static int getId() {
+		return Client.id;
 	}
 }
 
@@ -40,15 +58,6 @@ class InputHandlerOnClient implements Runnable {
 			System.out.println("Problem getting InputStream");
 		}
 		reader = new BufferedReader(new InputStreamReader(in));
-		String input;
-		try {
-			if((input = reader.readLine()).equals(null)) {
-				System.out.println(input);
-			}
-		} catch (Exception e) {
-			System.out.println("something wrong reading, client");
-			e.printStackTrace();
-		}
 	}
 
 	@Override
@@ -88,6 +97,9 @@ class OutputHandlerOnClient implements Runnable {
 		}
 		pw = new PrintWriter(out, true);
 		sc = new Scanner(System.in);
+		System.out.println("Choose an id");
+		Client.setId(Integer.parseInt(sc.nextLine()));
+		pw.println(Client.getId());
 	}
 
 	@Override
