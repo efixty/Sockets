@@ -97,9 +97,9 @@ class OutputHandlerOnClient implements Runnable {
 		}
 		pw = new PrintWriter(out, true);
 		sc = new Scanner(System.in);
-		System.out.println("Choose an id");
-		Client.setId(Integer.parseInt(sc.nextLine()));
-		pw.println(Client.getId());
+		System.out.println("Choose a nickname");
+		Client.setNickname(sc.nextLine());
+		pw.println(Client.getNickname());
 	}
 
 	@Override
@@ -107,10 +107,11 @@ class OutputHandlerOnClient implements Runnable {
 		try {
 			while(true) {
 				String output;
-				if((output = sc.nextLine()) != null)
-					if(!output.equals("END"))
-						pw.println(output);
-					else { connection.close(); System.exit(-116); }
+				if((output = sc.nextLine()) != null) {
+					pw.println(output);
+					if(output.equals("END"))
+						System.exit(-116);
+				}
 			}
 		} catch (Exception e) {
 			System.out.println("Exception while handling output from server");

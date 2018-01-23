@@ -1,5 +1,6 @@
 import java.net.Socket;
 import java.net.ServerSocket;
+import java.net.SocketException;
 import java.lang.*;
 import java.util.*;
 import java.io.*;
@@ -11,22 +12,19 @@ public class Server {
 	private static Socket client;
 	private static List<Integer> ids;
 	private static List<String> nicknames;
-	private static Map<Integer, Socket> clients;
+	private static Map<Integer, User> clients;
 
 	public static String message;
 
     public static void main(String[] args) throws Exception {
-		clients = new TreeMap<Integer, Socket>();
+		clients = new TreeMap<Integer, User>();
 		ids = new ArrayList<Integer>();
 		nicknames = new ArrayList<String>();
     	server = new ServerSocket(2222);
     	try{
     		while(true) {
     			client = server.accept();
-    			// System.out.println(client);
-				// new Thread(new InputHandlerOnServer(client)).start();
-				// new Thread(new OutputHandlerOnServer(client)).start();
-				new Thread(new ClientConnector(client)).start();
+    			new Thread(new ClientConnector(client)).start(); // nra hamar vor ete araji klienty 80 tarekan papi linelov anun greluc uti serveri tang 60 ropen, urish klient kpnelu vra eti chazdi
 			}
 
     	} catch (Exception e) {
@@ -35,48 +33,25 @@ public class Server {
     	}
 	}
 
-	/*private static boolean checkClient(Socket client) {
-		Iterator iterator = clients.iterator();
-		while(iterator.hasNext()) {
-			if(client.equals(iterator.next()))
-				return true;
-		}
-		return false;
-	}*/
-
-	public synchronized static void addNickname(String nickname) {
-		nicknames.add(nickname);
+	public synchronized static void addClient(int id, Socket client, String nickname) {
+		User temp = new User(client, nickname);
+		clients.put(id, temp);
 	}
 
-	public synchronized static void addId(int id) {
-		ids.add(id);
-	}
-
-	public static int getNicknamesSize() {
-		return nicknames.size();
-	}
-
-	public static int getIdSize() {
-		return ids.size();
-	}
-
-	public synchronized static void addClient(int id, Socket client) {
-		clients.put(id, client);
-	}
-
-	public synchronized static StringBuffer showClients() {
+	public synchronized static String showClients() {
 		StringBuffer clients_s = new StringBuffer();
 		Set<Integer> ids = clients.keySet();
 		Iterator iterator = ids.iterator();
 		while(iterator.hasNext()){
 			int id = (int) iterator.next();
-			clients_s.append(String.format("The id of %s is %d", clients.get(id), id));
+			clients_s.append(String.format("The id of %s is %d", ((User) clients.get(id)).getNickname(), id));
 			if(iterator.hasNext())
 				clients_s.append("\n");
 		}
-		return clients_s;
+		return "All connected clients are:\n" + clients_s + "\n////////////";
 	}
-	public static boolean isValidId(int id) {
+	
+	public static boolean isValidID(int id) {
 		Set<Integer> ids = clients.keySet();
 		Iterator iterator = ids.iterator();
 		while(iterator.hasNext()){
@@ -85,8 +60,21 @@ public class Server {
 		return true;
 	}
 
-	public static Map<Integer, Socket> getClients() {
+	public static boolean isValidNickname(String nickname) {
+		Set<Integer> ids = clients.keySet();
+		Iterator iterator = ids.iterator();
+		while(iterator.hasNext()){
+			if(clients.get(iterator.next()).getNickname().equals(nickname)) return false;
+		}
+		return true;
+	}
+
+	public static Map<Integer, User> getClients() {
 		return clients;
+	}
+
+	public synchronized static void removeClient(int id) {
+		clients.remove(id);
 	}
 }
 
@@ -97,8 +85,8 @@ class ClientConnector implements Runnable {
 	private PrintWriter pw;
 	private Scanner sc;
 	private OutputStream out;
-	private int client2Id;
-	private int client1Id;
+	private int clientID;
+	private String nickname;
 
 	public ClientConnector(Socket client) {
 		this.client = client;
@@ -120,31 +108,24 @@ class ClientConnector implements Runnable {
 		}
 		reader = new BufferedReader(new InputStreamReader(in));
 		try{
-			client1Id = Integer.parseInt(reader.readLine());
-			while(!Server.isValidId(client1Id)) {
-				pw.println("Client with this id already exists, enter another one");
-				client1Id = Integer.parseInt(reader.readLine());
+			nickname = reader.readLine();
+			while(!Server.isValidNickname(nickname)) {
+				pw.println("Client with this nickname already exists, enter another one");
+				nickname = reader.readLine();
 			}
-			Server.addClient(client1Id, client);
+			do {
+				clientID = new Random().nextInt(99)+1;
+			} while(!Server.isValidID(clientID));
+			Server.addClient(clientID, client, nickname);
 		} catch (Exception e) {
 			System.out.println("Couldn't add an item with id");
 			e.printStackTrace();
-		} 
-		pw.println(Server.showClients());
-		pw.println("Choose someone by id to chat with");
-		try {
-			client2Id = Integer.parseInt(reader.readLine());
-		} catch (Exception e) {
-			System.out.println("Exception while getting chatmateId");
-			e.printStackTrace();
 		}
-		// System.out.println(Server.showClients());
-		// new Thread(new InputHandlerOnServer(client1Id)).start();
-		new Thread(new InputHandlerOnServer(client2Id)).start();
-		// new Thread(new OutputHandlerOnServer(client2Id)).start();
-		new Thread(new OutputHandlerOnServer(client1Id)).start();
+		pw.println(String.format("A new user was created with:\nNickname: %s\nID: %d\n////////////", nickname, clientID));
+		pw.println(Server.showClients());
+		pw.println("Choose someone to chat with. The messages must contain the actual message and the id of client separated with spacebar.\n////////////");
+		new Thread(new InputHandlerOnServer(clientID)).start();
 	}
-
 }
 
 class InputHandlerOnServer implements Runnable {
@@ -152,30 +133,57 @@ class InputHandlerOnServer implements Runnable {
 	private Socket client;
 	private BufferedReader reader;
 	private InputStream in;
-	private int clientId;
+	private int clientID;
+	private boolean isStopped = false;
+	private PrintWriter pw;
+	private OutputStream out;
 
-	InputHandlerOnServer(int clientId) {
-		this.clientId = clientId;
-		this.client = Server.getClients().get(clientId);
+	InputHandlerOnServer(int clientID) {
+		this.clientID = clientID;
+		this.client = Server.getClients().get(clientID).getConnection();
 		try{
 			in = client.getInputStream();
 		} catch(Exception e) {
 			System.out.println("Problem getting InputStream");
 		}
 		reader = new BufferedReader(new InputStreamReader(in));
+		try {
+			out = client.getOutputStream();
+		} catch (Exception e) {
+			System.out.println("in 223");
+			e.printStackTrace();
+		}
+		pw = new PrintWriter(out, true);
 	}
 
 	@Override
 	public void run() {
 		try {
-			while(true) {
-				String input;
-				if((input = reader.readLine()) != null)
-					// System.out.println(input);
-					Server.message = input;
+			while(!isStopped) {
+				String input = null;
+				input = reader.readLine();
+				if(input == null) {
+					System.out.printf("Disconnected client: removing from map (id == %d)\n", clientID);
+					Server.removeClient(clientID);
+					stopMe();
+				} else switch(input) {
+					case "list":
+						System.out.println(Server.showClients());
+						break;
+
+					case "END":
+						Server.removeClient(clientID);
+						stopMe();
+						break;
+					
+					default:
+						sendMessage(input);
+						break;
+				}
 			}
 		} catch (Exception e) {
-			System.out.println("Exception while handling input from server");
+			System.out.println("Exception while handling input from client");
+			System.out.println(e.getMessage());
 			e.printStackTrace();
 		} finally {
 			try {
@@ -186,49 +194,32 @@ class InputHandlerOnServer implements Runnable {
 		}
 	}
 
-}
-
-class OutputHandlerOnServer implements Runnable {
-
-	private Socket client;
-	private PrintWriter pw;
-	private Scanner sc;
-	private OutputStream out;
-	private int clientId;
-
-	OutputHandlerOnServer(int clientId) {
-		this.clientId = clientId;
-		this.client = Server.getClients().get(clientId);
-		try{
-			out = client.getOutputStream();
-		} catch(Exception e) {
-			System.out.println("Problem getting OutputStream");
-			e.printStackTrace();
-		}
-		pw = new PrintWriter(out, true);
-		sc = new Scanner(System.in);
+	private void stopMe() {
+		this.isStopped = true;
 	}
 
-	@Override
-	public void run() {
+	private int getIDFromInput(String input) {
+		return Integer.parseInt(input.split(" ")[input.split(" ").length - 1]);
+	}
+
+	private String getMessageFromInput(String input) {
+		StringBuffer sb = new StringBuffer();
+		String[] messageArr = input.split(" ");
+		for(int i = 0; i < messageArr.length - 1; i++) {
+			sb.append(messageArr[i] + " ");
+		}
+		return sb.toString();
+	}
+
+	private void sendMessage(String input) {
+		int id = getIDFromInput(input);
+		String message = getMessageFromInput(input);
+		// Socket client = Server.getClients().get(id).getConnection();
 		try {
-			while(true) {
-				String output;
-				/*if((output = sc.nextLine()) != null)*/
-				if((output = Server.message) != null) {
-					pw.println(output);
-					Server.message = null;
-				}
-			}
+			pw.println(message);
 		} catch (Exception e) {
-			System.out.println("Exception while handling output from server");
+			System.out.println("in 230");
 			e.printStackTrace();
-		} finally {
-			try {
-				pw.close();
-			} catch(Exception e) {
-				System.out.println("Couldn't close OutputHandler's writer");
-			}
 		}
 	}
 }
