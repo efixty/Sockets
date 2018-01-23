@@ -147,19 +147,18 @@ class InputHandlerOnServer implements Runnable {
 			System.out.println("Problem getting InputStream");
 		}
 		reader = new BufferedReader(new InputStreamReader(in));
-		try {
-			out = client.getOutputStream();
-		} catch (Exception e) {
-			System.out.println("in 223");
-			e.printStackTrace();
-		}
-		pw = new PrintWriter(out, true);
 	}
 
 	@Override
 	public void run() {
 		try {
 			while(!isStopped) {
+				try {
+					out = client.getOutputStream();
+				} catch (Exception  e) {
+					e.printStackTrace();
+				}
+				pw = new PrintWriter(out, true);
 				String input = null;
 				input = reader.readLine();
 				if(input == null) {
@@ -168,7 +167,7 @@ class InputHandlerOnServer implements Runnable {
 					stopMe();
 				} else switch(input) {
 					case "list":
-						System.out.println(Server.showClients());
+						pw.println(Server.showClients());
 						break;
 
 					case "END":
@@ -212,13 +211,28 @@ class InputHandlerOnServer implements Runnable {
 	}
 
 	private void sendMessage(String input) {
-		int id = getIDFromInput(input);
-		String message = getMessageFromInput(input);
-		// Socket client = Server.getClients().get(id).getConnection();
+		int id;
 		try {
-			pw.println(message);
+			id = getIDFromInput(input);
+		} catch(NumberFormatException nfe) {
+			pw.println("Bad input. Message must contain at least one number at it's end, e. g. hello 72");
+			return;
+		}
+		if(Server.isValidID(id)) {
+			pw.println("ID not found, type \"list\" to see all connected clients");
+			return;
+		}
+		String message = getMessageFromInput(input);
+		Socket client = Server.getClients().get(id).getConnection();
+		try {
+			out = client.getOutputStream();
 		} catch (Exception e) {
-			System.out.println("in 230");
+			e.printStackTrace();
+		}
+		pw = new PrintWriter(out, true);
+		try {
+			pw.println("" + Server.getClients().get(clientID).getNickname() + "(" + clientID + "): " + message);
+		} catch (Exception e) {
 			e.printStackTrace();
 		}
 	}

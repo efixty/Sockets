@@ -97,6 +97,7 @@ class OutputHandlerOnClient implements Runnable {
 		}
 		pw = new PrintWriter(out, true);
 		sc = new Scanner(System.in);
+		System.out.println("Hello, you are almost connected. After initialization you can type list to see all active clients or END to turn off the chat.")
 		System.out.println("Choose a nickname");
 		Client.setNickname(sc.nextLine());
 		pw.println(Client.getNickname());
@@ -114,7 +115,7 @@ class OutputHandlerOnClient implements Runnable {
 				}
 			}
 		} catch (Exception e) {
-			System.out.println("Exception while handling output from server");
+			System.out.println("Exception while handling output to server");
 			e.printStackTrace();
 		} finally {
 			try {

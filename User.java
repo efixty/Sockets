@@ -16,9 +16,4 @@ public class User {
 	public Socket getConnection() {
 		return connection;
 	}
-
-	@Override
-	public String toString() {
-		return nickname;
-	}
 }
